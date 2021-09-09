@@ -15,10 +15,13 @@
 //! A native `P2WSH` input signer.
 
 use bitcoin::{
-    blockdata::script::Script, blockdata::transaction::TxIn, network::constants::Network,
-    util::address::Address, PublicKey,
+    blockdata::script::Script,
+    blockdata::transaction::TxIn,
+    network::constants::Network,
+    secp256k1::{self, All, Secp256k1, SecretKey},
+    util::address::Address,
+    PublicKey,
 };
-use secp256k1::{self, All, Secp256k1, SecretKey};
 
 use crate::{
     multisig::RedeemScript, sign, InputSignature, InputSignatureRef, Sha256dHash, TxInRef,

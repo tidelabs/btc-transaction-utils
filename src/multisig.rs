@@ -114,8 +114,13 @@ impl RedeemScriptContent {
     /// Tries to fetch redeem script content from the given raw script and returns error
     /// if the script doesn't satisfy `BIP-16` standard.
     pub fn parse(script: &Script) -> Result<RedeemScriptContent, RedeemScriptError> {
-        fn read_usize(instruction: Instruction) -> Option<usize> {
-            match instruction {
+        fn read_usize(
+            instruction: std::result::Result<Instruction, bitcoin::blockdata::script::Error>,
+        ) -> Option<usize> {
+            if let Err(e) = instruction {
+                return None;
+            }
+            match instruction.unwrap() {
                 Instruction::Op(op) => {
                     if let Class::PushNum(num) = op.classify() {
                         Some(num as usize)
@@ -131,8 +136,8 @@ impl RedeemScriptContent {
             }
         };
 
-        let mut instructions = script.iter(true).peekable();
-        // Parses quorum.
+        let mut instructions = script.instructions().peekable(); //iter(true).peekable();
+                                                                 // Parses quorum.
         let quorum = instructions
             .next()
             .and_then(read_usize)
@@ -140,7 +145,7 @@ impl RedeemScriptContent {
         let public_keys = {
             // Parses public keys.
             let mut public_keys = Vec::new();
-            while let Some(Instruction::PushBytes(slice)) = instructions.peek().cloned() {
+            while let Some(Ok(Instruction::PushBytes(slice))) = instructions.peek().cloned() {
                 // HACK: `public_keys_len` can be pushed as `OP_PUSHNUM` or as `OP_PUSHBYTES`
                 // but its length cannot be greater than 1.
                 if slice.len() == 1 {
@@ -162,7 +167,7 @@ impl RedeemScriptContent {
                 RedeemScriptError::NotEnoughPublicKeys
             );
             ensure!(
-                Some(Instruction::Op(OP_CHECKMULTISIG)) == instructions.next(),
+                Some(Ok(Instruction::Op(OP_CHECKMULTISIG))) == instructions.next(),
                 RedeemScriptError::NotStandard
             );
             public_keys

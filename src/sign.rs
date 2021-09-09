@@ -13,16 +13,21 @@
 // limitations under the License.
 
 //! Helper functions to create and verify segwit input signatures with the sighash all type.
+use bitcoin_hashes::sha256d::Hash as Sha256dHash;
 
 use bitcoin::{
-    blockdata::script::Script, blockdata::transaction::SigHashType,
-    util::bip143::SighashComponents, PublicKey,
+    blockdata::script::Script,
+    blockdata::transaction::SigHashType,
+    secp256k1::{self, Message, Secp256k1, SecretKey, Signature, Signing, Verification},
+    util::bip143::SigHashCache,
+    PublicKey,
 };
-use secp256k1::{self, Message, Secp256k1, SecretKey, Signature, Signing, Verification};
+// use bitcoin_hashes::sha256d::Hash as Sha256dHash;
+// use secp256k1::{self, Message, Secp256k1, SecretKey, Signature, Signing, Verification};
 
 use std::borrow::ToOwned;
 
-use crate::{Sha256dHash, TxInRef, UnspentTxOutValue};
+use crate::{TxInRef, UnspentTxOutValue};
 
 /// A signature data with the embedded sighash type byte.
 #[derive(Debug, Clone, PartialEq)]
@@ -144,9 +149,12 @@ pub fn signature_hash<'a, 'b, V: Into<UnspentTxOutValue<'b>>>(
     value: V,
 ) -> Sha256dHash {
     let value = value.into().balance(txin);
-    SighashComponents::new(txin.transaction)
-        .sighash_all(txin.as_ref(), script, value)
+    // cache
+    SigHashCache::new(txin.transaction)
+        .signature_hash(txin.index(), &script, value, SigHashType::All)
         .as_hash()
+    // .sighash_all(txin.as_ref(), script, value)
+    // .as_hash()
 }
 
 /// Computes the [`BIP-143`][bip-143] compliant signature for the given input.

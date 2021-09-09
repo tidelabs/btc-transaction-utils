@@ -16,10 +16,12 @@
 
 use bitcoin::{
     blockdata::transaction::Transaction,
-    consensus, Network, {PrivateKey, PublicKey},
+    consensus,
+    secp256k1::{Secp256k1, SecretKey},
+    Network, {PrivateKey, PublicKey},
 };
 use rand::Rng;
-use secp256k1::{Secp256k1, SecretKey};
+// use secp256k1::{Secp256k1, SecretKey};
 
 /// Computes a bitcoin private key and a corresponding public key using a
 /// given pseudo-random number generator.
